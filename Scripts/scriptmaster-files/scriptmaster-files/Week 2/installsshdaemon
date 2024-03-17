@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Controleer of het configuratiebestand is opgegeven als parameter
+if [ $# -eq 0 ]; then
+    echo "SYNOPSYS: $0 <configuratiebestand>"
+    exit 1
+fi
+
+configuratiebestand=$1
+
+# Controleer of het configuratiebestand bestaat
+if [ ! -f "$configuratiebestand" ]; then
+    echo "Bestand $configuratiebestand bestaat niet. Script afgebroken."
+    exit 1
+fi
+
+# Lees de hostnamen of IP-adressen vanuit het configuratiebestand
+servers=($(cat "$configuratiebestand"))
+
+# Functie om te verbinden met een server en commando's uit te voeren
+function run_on_server() {
+  server=$1
+  shift
+
+  echo "** Verbinden met $server **"
+  ssh -t $server "$@"
+
+  echo "** Acties op $server voltooid **"
+  echo
+}
+
+echo "Installatie via configuratiebestand $configuratiebestand."
+echo "Op de volgende servers wordt een SFTP-server opgezet: ${servers[*]}"
+read -p "Wil je doorgaan (y/n): " keuze
+
+if [ "$keuze" == "y" ]; then
+    success_count=0
+    fail_count=0
+
+    # Loop door servers en voer stappen uit
+    for server in "${servers[@]}"; do
+        run_on_server $server <<EOF
+            echo "** OpenSSH-server installeren **"
+            sudo apt update
+            sudo apt install -y openssh-server
+
+            # Configuratiebestanden aanpassen
+            sudo sed -i 's/#Subsystem sftp internal-sftp/Subsystem sftp internal-sftp/' /etc/ssh/sshd_config
+            echo "Match User sftpuser" | sudo tee -a /etc/ssh/sshd_config
+            echo "    ForceCommand internal-sftp" | sudo tee -a /etc/ssh/sshd_config
+            echo "    ChrootDirectory /home/%u" | sudo tee -a /etc/ssh/sshd_config
+            echo "    PermitTunnel no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    AllowAgentForwarding no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    AllowTcpForwarding no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    X11Forwarding no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    PasswordAuthentication yes" | sudo tee -a /etc/ssh/sshd_config
+            echo "    PermitEmptyPasswords no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    PermitUserEnvironment no" | sudo tee -a /etc/ssh/sshd_config
+
+            # Herstart SSH-service
+            sudo systemctl restart ssh
+
+            # Gebruiker aanmaken en instellen voor SFTP
+            sudo useradd -m sftpuser
+            sudo passwd sftpuser
+            sudo chown root:root /home/sftpuser
+            sudo chmod 755 /home/sftpuser
+
+            # Map voor SFTP aanmaken
+            sudo mkdir -p /home/sftpuser/upload
+            sudo chown sftpuser:sftpuser /home/sftpuser/upload
+            sudo chmod 755 /home/sftpuser/upload
+EOF
+        if [ $? -eq 0 ]; then
+            echo "SFTP-server opgezet op $server."
+            ((success_count++))
+        else
+            echo "Het opzetten van de SFTP-server op $server is mislukt."
+            ((fail_count++))
+        fi
+    done
+
+    echo "Op $success_count servers is de SFTP-server succesvol opgezet."
+    echo "Op $fail_count servers is het niet gelukt de SFTP-server op te zetten."
+elif [ "$keuze" == "n" ]; then
+    echo "De gebruiker heeft het script gestopt."
+else
+    echo "Ongeldige invoer. Script afgebroken."
+fi

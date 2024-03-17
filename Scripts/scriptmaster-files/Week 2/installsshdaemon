@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Check if the configuration file is provided as a parameter
+if [ $# -eq 0 ]; then
+    echo "SYNOPSIS: $0 <configuration_file>"
+    exit 1
+fi
+
+configuration_file=$1
+
+# Check if the configuration file exists
+if [ ! -f "$configuration_file" ]; then
+    echo "File $configuration_file does not exist. Script aborted."
+    exit 1
+fi
+
+# Read hostnames or IP addresses from the configuration file
+servers=($(cat "$configuration_file"))
+
+# Function to connect to a server and execute commands
+function run_on_server() {
+  server=$1
+  shift
+
+  echo "** Connecting to $server **"
+  ssh -t $server "$@"
+
+  echo "** Actions on $server completed **"
+  echo
+}
+
+echo "Installation via configuration file $configuration_file."
+echo "Setting up an SFTP server on the following servers: ${servers[*]}"
+read -p "Do you want to proceed (y/n): " choice
+
+if [ "$choice" == "y" ]; then
+    success_count=0
+    fail_count=0
+
+    # Loop through servers and perform steps
+    for server in "${servers[@]}"; do
+        run_on_server $server <<EOF
+            echo "** Installing OpenSSH server **"
+            sudo apt update
+            sudo apt install -y openssh-server
+
+            # Modify configuration files
+            sudo sed -i 's/#Subsystem sftp internal-sftp/Subsystem sftp internal-sftp/' /etc/ssh/sshd_config
+            echo "Match User sftpuser" | sudo tee -a /etc/ssh/sshd_config
+            echo "    ForceCommand internal-sftp" | sudo tee -a /etc/ssh/sshd_config
+            echo "    ChrootDirectory /home/%u" | sudo tee -a /etc/ssh/sshd_config
+            echo "    PermitTunnel no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    AllowAgentForwarding no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    AllowTcpForwarding no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    X11Forwarding no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    PasswordAuthentication yes" | sudo tee -a /etc/ssh/sshd_config
+            echo "    PermitEmptyPasswords no" | sudo tee -a /etc/ssh/sshd_config
+            echo "    PermitUserEnvironment no" | sudo tee -a /etc/ssh/sshd_config
+
+            # Restart SSH service
+            sudo systemctl restart ssh
+
+            # Create and configure user for SFTP
+            sudo useradd -m sftpuser
+            sudo passwd sftpuser
+            sudo chown root:root /home/sftpuser
+            sudo chmod 755 /home/sftpuser
+
+            # Create directory for SFTP
+            sudo mkdir -p /home/sftpuser/upload
+            sudo chown sftpuser:sftpuser /home/sftpuser/upload
+            sudo chmod 755 /home/sftpuser/upload
+EOF
+        if [ $? -eq 0 ]; then
+            echo "SFTP server set up on $server."
+            ((success_count++))
+        else
+            echo "Failed to set up SFTP server on $server."
+            ((fail_count++))
+        fi
+    done
+
+    echo "SFTP server successfully set up on $success_count server(s)."
+    echo "Failed to set up SFTP server on $fail_count server(s)."
+elif [ "$choice" == "n" ]; then
+    echo "The user has stopped the script."
+else
+    echo "Invalid input. Script aborted."
+fi
