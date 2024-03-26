@@ -1,20 +1,20 @@
-# Importeer de benodigde modules
+# Import the required modules
 Import-Module ActiveDirectory
 
-# Definieer een functie om het script opnieuw uit te voeren wanneer dit nodig is.
+# Define a function to rerun the script when necessary
 function RunScriptAgain {
-    $response = Read-Host "Wil je nog een gebruiker aanmaken? (Y/J/Ja om door te gaan)"
-    if ($response -in 'Y','y','J','j','Ja','ja') {
+    $response = Read-Host "Do you want to create another user? (Y/N)"
+    if ($response -in 'Y','y') {
         Clear-Host
-        & "$PSCommandPath"  # Voer het script opnieuw uit
+        & "$PSCommandPath"  # Run the script again
     } else {
-        Write-Host "Het script wordt afgesloten..." -ForegroundColor Cyan
-        Start-Sleep -seconds 2
+        Write-Host "Exiting the script..." -ForegroundColor Cyan
+        Start-Sleep -Seconds 2
         exit
     }
 }
 
-# Functie om de gebruiker aan geselecteerde groepen toe te voegen
+# Function to add the user to selected groups
 function AddUserToGroups {
     param (
         [string]$username,
@@ -22,120 +22,119 @@ function AddUserToGroups {
         [object]$newUser
     )
 
-    Write-Host "`nKies de groepen waarvan de gebruiker lid moet worden:`n" -ForegroundColor Cyan
+    Write-Host "`nChoose the groups the user should be added to:`n" -ForegroundColor Cyan
     for ($i = 0; $i -lt $groupList.Count; $i++) {
         Write-Host "$($i+1). $($groupList[$i])" -ForegroundColor Yellow
     }
 
-    $selectedGroups = Read-Host "`nVoer de nummers in van de groepen waarvan de gebruiker lid moet worden (gescheiden door spaties of komma's)"
+    $selectedGroups = Read-Host "`nEnter the numbers of the groups to add the user to (separated by spaces or commas)"
     $selectedGroups = $selectedGroups -split ",|\s" | Where-Object { $_ -match '\d+' }
 
-    # Controleer of alle geselecteerde groepen bestaan
+    # Check if all selected groups exist
     $validGroups = @()
     foreach ($index in $selectedGroups) {
         if ($index -ge 1 -and $index -le $groupList.Count) {
             $validGroups += $groupList[$index - 1]
         } else {
-            Write-Host "Fout: De groep met nummer $index bestaat niet." -ForegroundColor Red
-            Start-Sleep -seconds 2
+            Write-Host "Error: Group with number $index does not exist." -ForegroundColor Red
+            Start-Sleep -Seconds 2
         }
     }
 
     if ($validGroups.Count -eq 0) {
-        Write-Host "Geen geldige groepen geselecteerd. Probeer opnieuw." -ForegroundColor Red
-        Start-Sleep -seconds 2
+        Write-Host "No valid groups selected. Try again." -ForegroundColor Red
+        Start-Sleep -Seconds 2
         AddUserToGroups -username $username -groupList $groupList -newUser $newUser
         return
     }
 
-    # Voeg de gebruiker toe aan de geselecteerde groepen
+    # Add the user to the selected groups
     $addedGroups = @()
     foreach ($selectedGroup in $validGroups) {
         Add-ADGroupMember -Identity $selectedGroup -Members $newUser
         $addedGroups += $selectedGroup
     }
 
-    # Weergave van toegevoegde groepen
+    # Display added groups
     Clear-Host
     if ($addedGroups) {
-        Write-Host "Gebruiker is toegevoegd aan de volgende groepen:`n" -ForegroundColor Cyan
+        Write-Host "User has been added to the following groups:`n" -ForegroundColor Cyan
         foreach ($group in $addedGroups) {
             Write-Host "- $group" -ForegroundColor Yellow
         }
     }
 
-    return $addedGroups  # Retourneer de toegevoegde groepen
+    return $addedGroups  # Return the added groups
     Start-Sleep -Seconds 2
 }
 
-
-# Standaardwachtwoord
+# Default password
 $defaultPassword = "DefaultPassword123!"
 
-# Vraag gebruikersgegevens op
+# Get user details
 Clear-Host
-$firstname = Read-Host "Voer de voornaam in"
-$lastname = Read-Host "Voer de achternaam in"
+$firstname = Read-Host "Enter the first name"
+$lastname = Read-Host "Enter the last name"
 
-# Voeg een korte vertraging toe om kleur glitches te voorkomen
+# Add a short delay to prevent color glitches
 Start-Sleep -Seconds 1
 
-# Genereer de gebruikersnaam
+# Generate the username
 $username = "$firstname.$lastname"
 
-# Controleer of de lengte van de gebruikersnaam de maximale limiet overschrijdt
+# Check if the username length exceeds the maximum limit
 $maxUsernameLength = 20
 if ($username.Length -gt $maxUsernameLength) {
-    Write-Host "De combinatie van voornaam en achternaam resulteert in een gebruikersnaam die te lang is." -ForegroundColor Red
-    Write-Host "Het script zal hierop falen, omdat de maximale gebruikersnaamlimiet van Active Directory wordt overschreden." -ForegroundColor Red
-    Write-Host "Als alternatief kunt u deze gebruiker handmatig aanmaken en vervolgens een andere, kortere gebruikersnaam toewijzen." -ForegroundColor Red
+    Write-Host "The combination of first name and last name results in a username that is too long." -ForegroundColor Red
+    Write-Host "The script will fail here, as it exceeds the maximum username limit of Active Directory." -ForegroundColor Red
+    Write-Host "Alternatively, you can create this user manually and then assign a different, shorter username." -ForegroundColor Red
     exit
 }
 
-# Maak de gebruiker aan en sla de uitvoer op in een variabele
+# Create the user and store the output in a variable
 $newUser = New-ADUser -Name $username -GivenName $firstname -Surname $lastname -AccountPassword (ConvertTo-SecureString -AsPlainText $defaultPassword -Force) -PassThru -Enabled $true
 
-# Set de User Principal Name (UPN) gelijk aan de gebruikersnaam
+# Set the User Principal Name (UPN) equal to the username
 Set-ADUser -Identity $username -UserPrincipalName "$username@orcsnest.local"
 
-# Vraag de OU waar de gebruiker moet worden opgeslagen via een GUI
-$selectedOU = Get-ADOrganizationalUnit -Filter * | Out-GridView -Title "Selecteer een OU voor de gebruiker" -PassThru
+# Get the OU where the user should be stored via a GUI
+$selectedOU = Get-ADOrganizationalUnit -Filter * | Out-GridView -Title "Select an OU for the user" -PassThru
 
 if (-not $selectedOU) {
-    Write-Host "Het script is afgebroken omdat geen OU is geselecteerd om de nieuwe gebruiker in op te slaan." -ForegroundColor Red
+    Write-Host "The script has been aborted because no OU was selected to store the new user." -ForegroundColor Red
     exit
 }
 
-Write-Host "Gebruiker zal worden opgeslagen in $selectedOU."
+Write-Host "User will be stored in $selectedOU."
 
-# Verplaats de gebruiker naar de geselecteerde OU
+# Move the user to the selected OU
 Move-ADObject -Identity $newUser.DistinguishedName -TargetPath $selectedOU.DistinguishedName
 
-# Voeg de gebruiker toe aan de geselecteerde groepen
+# Add the user to the selected groups
 $addedGroups = AddUserToGroups -username $username -groupList $groupList -newUser $newUser
 
-# Weergave van de gebruiker en de groepen
+# Display user and groups
 Clear-Host
-Start-Sleep -seconds 1
+Start-Sleep -Seconds 1
 if ($addedGroups) {
-    Write-Host "Gebruiker '$username' is aangemaakt met de volgende attributen:`n" -ForegroundColor Cyan
-    Write-Host "Voornaam: $firstname" -ForegroundColor Yellow
-    Write-Host "Achternaam: $lastname" -ForegroundColor Yellow
-    Write-Host "Gebruikersnaam: $username" -ForegroundColor Yellow
+    Write-Host "User '$username' has been created with the following attributes:`n" -ForegroundColor Cyan
+    Write-Host "First Name: $firstname" -ForegroundColor Yellow
+    Write-Host "Last Name: $lastname" -ForegroundColor Yellow
+    Write-Host "Username: $username" -ForegroundColor Yellow
     Write-Host "User Principal Name (UPN): $username@orcsnest.local" -ForegroundColor Yellow
-    Write-Host "Locatie: $selectedOU`n" -ForegroundColor Yellow
-    Write-Host "Groepen:`n" -ForegroundColor Cyan
+    Write-Host "Location: $selectedOU`n" -ForegroundColor Yellow
+    Write-Host "Groups:`n" -ForegroundColor Cyan
     foreach ($group in $addedGroups) {
         Write-Host "- $group" -ForegroundColor Yellow
     }
 }
 
-Write-Host "`nHet standaardwachtwoord voor deze gebruiker is: $defaultPassword" -ForegroundColor Cyan
+Write-Host "`nThe default password for this user is: $defaultPassword" -ForegroundColor Cyan
 
-# Maak het wachtwoord onzichtbaar en verwijder het uit het geheugen
+# Hide and clear the password from memory
 $defaultPassword = $null
 Write-Host ""
 Write-Host ""
-Write-Host "Het script is gereed." -ForegroundColor Green
-# Voer de functie uit om te beslissen of het script opnieuw moet worden uitgevoerd
+Write-Host "The script has completed." -ForegroundColor Green
+# Run the function to decide whether the script should be rerun
 RunScriptAgain
