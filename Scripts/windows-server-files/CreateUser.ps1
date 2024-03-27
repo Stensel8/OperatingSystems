@@ -110,6 +110,9 @@ Write-Host "User will be stored in $selectedOU."
 # Move the user to the selected OU
 Move-ADObject -Identity $newUser.DistinguishedName -TargetPath $selectedOU.DistinguishedName
 
+# Get the current groups and put them into a list
+$groupList = Get-ADGroup -Filter *
+
 # Add the user to the selected groups
 $addedGroups = AddUserToGroups -username $username -groupList $groupList -newUser $newUser
 
