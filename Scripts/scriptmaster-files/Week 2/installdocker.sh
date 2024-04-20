@@ -1,82 +1,94 @@
 #!/bin/bash
 
-# Function to display colored messages
-function color_msg() {
-  local color="$1"
-  local msg="$2"
-  case "$color" in
-    red) echo -e "\e[31m$msg\e[0m" ;;
-    green) echo -e "\e[32m$msg\e[0m" ;;
-    orange) echo -e "\e[33m$msg\e[0m" ;;
-    blue) echo -e "\e[34m$msg\e[0m" ;;
-    *) echo "$msg" ;;
-  esac
+########################################################################################
+# © Sten Tijhuis - 550600
+# installdocker.sh
+########################################################################################
+
+########################################################################################
+# Functies aanmaken
+########################################################################################
+
+function rode_echo() {
+  echo -e "\e[31m$1\e[0m"
 }
 
-# Function to display a line separator
-function line_separator() {
+function oranje_echo() {
+  echo -e "\e[33m$1\e[0m"
+}
+
+function groene_echo() {
+  echo -e "\e[32m$1\e[0m"
+}
+
+function blauwe_echo() {
+  echo -e "\e[34m$1\e[0m"
+}
+
+# Functie om een lijn scheider weer te geven
+function lijn_scheider() {
   echo "--------------------------------------------------------------"
 }
 
-# Function to connect to a server and execute commands
-function run_on_server() {
+# Functie om verbinding te maken met een server en commando's uit te voeren
+function uitvoeren_op_server() {
   server=$1
   shift
 
-  color_msg orange "** Connecting to $server **"
-  # Attempt SSH connection and execute commands
+  oranje_echo "** Verbinden met $server **"
+  # Probeer SSH-verbinding te maken en commando's uit te voeren
   ssh -q -t $server "$@"
-  # Check the exit status of the SSH connection attempt
+  # Controleer de exit-status van de SSH-verbinding
   ssh_exit_status=$?
   if [ $ssh_exit_status -ne 0 ]; then
-    color_msg red "Failed to connect to $server."
+    rode_echo "Kan geen verbinding maken met $server."
     return 1
   fi
-  color_msg orange "** Actions on $server completed **"
+  oranje_echo "** Acties op $server voltooid **"
   echo
 }
 
-# Check if the configuration file is provided as a parameter
+# Controleer of het configuratiebestand als parameter is opgegeven
 if [ $# -eq 0 ]; then
-    color_msg red "SYNOPSIS: $0 <configuration_file>"
+    rode_echo "SYNOPSIS: $0 <configuratiebestand>"
     exit 1
 fi
 
-configuration_file=$1
+configuratiebestand=$1
 
-# Check if the configuration file exists
-if [ ! -f "$configuration_file" ]; then
-    color_msg red "File $configuration_file does not exist. Script aborted."
+# Controleer of het configuratiebestand bestaat
+if [ ! -f "$configuratiebestand" ]; then
+    rode_echo "Bestand $configuratiebestand bestaat niet. Script afgebroken."
     exit 1
 fi
 
-# Read hostnames and IP addresses alternatively from the configuration file
-servers=($(grep -v "^#" "$configuration_file"))
+# Lees hostnamen en IP-adressen afwisselend uit het configuratiebestand
+servers=($(grep -v "^#" "$configuratiebestand"))
 
-echo "Installation via configuration file $configuration_file."
-echo "Docker will be installed on the following servers: ${servers[*]}"
-read -p "Do you want to proceed (y/n): " choice
+echo "Installatie via configuratiebestand $configuratiebestand."
+echo "Docker zal worden geïnstalleerd op de volgende servers: ${servers[*]}"
+read -p "Wil je doorgaan (j/n): " keuze
 
-if [ "$choice" == "y" ]; then
-    success_count=0
-    skip_count=0
+if [ "$keuze" == "j" ]; then
+    succes_aantal=0
+    overslaan_aantal=0
 
-    # Loop through servers and perform steps
+    # Loop door servers en voer stappen uit
     for server in "${servers[@]}"; do
-        # Check if the server is reachable
+        # Controleer of de server bereikbaar is
         if ! ping -c 1 -W 1 "$server" &> /dev/null; then
-            color_msg red "Server $server is not reachable. Skipping installation."
+            rode_echo "Server $server is niet bereikbaar. Installatie wordt overgeslagen."
             continue
         fi
         
-        # Check if Docker is already installed
+        # Controleer of Docker al is geïnstalleerd
         if ssh -q $server "sudo docker run hello-world &> /dev/null"; then
-            color_msg green "Docker is already installed on $server."
-            ((skip_count++))
+            groene_echo "Docker is al geïnstalleerd op $server."
+            ((overslaan_aantal++))
         else
-            # Install Docker using the convenience script
-            run_on_server $server <<EOF
-                echo "** Installing Docker **"
+            # Installeer Docker met behulp van het convenience script
+            uitvoeren_op_server $server <<EOF
+                echo "** Docker installeren **"
                 curl -fsSL https://get.docker.com -o get-docker.sh
                 sudo sh get-docker.sh
                 sudo usermod -aG docker \$USER
@@ -85,24 +97,24 @@ if [ "$choice" == "y" ]; then
                 rm get-docker.sh
 EOF
             if [ $? -eq 0 ]; then
-                color_msg green "Docker installed successfully on $server."
-                ((success_count++))
+                groene_echo "Docker succesvol geïnstalleerd op $server."
+                ((succes_aantal++))
             else
-                color_msg red "Failed to install Docker on $server."
+                rode_echo "Kon Docker niet installeren op $server."
             fi
         fi
-        line_separator
+        lijn_scheider
     done
 
-    line_separator
-    color_msg green "** SUMMARY **"
+    lijn_scheider
+    groene_echo "** SAMENVATTING **"
     echo
-    color_msg green "Docker installed successfully on $success_count server(s)."
-    color_msg blue "Docker was already installed on $skip_count server(s)."
-    line_separator
+    groene_echo "Docker succesvol geïnstalleerd op $succes_aantal server(s)."
+    blauwe_echo "Docker was al geïnstalleerd op $overslaan_aantal server(s)."
+    lijn_scheider
     echo
-elif [ "$choice" == "n" ]; then
-    color_msg orange "User aborted the script."
+elif [ "$keuze" == "n" ]; then
+    oranje_echo "Gebruiker heeft het script afgebroken."
 else
-    color_msg red "Invalid input. Script aborted."
+    rode_echo "Ongeldige invoer. Script afgebroken."
 fi
