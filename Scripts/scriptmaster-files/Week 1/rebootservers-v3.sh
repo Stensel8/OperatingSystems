@@ -2,60 +2,65 @@
 
 ########################################################################################
 # © Sten Tijhuis - 550600
+# rebootservers-v3.sh
 ########################################################################################
 
-# Function to display colored messages (optional for aesthetics)
-function colored_echo() {
-  local color_code="$1"
-  local message="$2"
-  echo -e "\e[${color_code}m${message}\e[0m"
+########################################################################################
+# Functies aanmaken
+########################################################################################
+
+function rode_echo() {
+  echo -e "\e[31m$1\e[0m"
 }
 
-# Function to reboot a server with retry and unreachable handling
-function reboot_server() {
-  local server_name="$1"
-  local retry_count=0
+function oranje_echo() {
+  echo -e "\e[33m$1\e[0m"
+}
 
-  # Loop for retry attempts (3 times)
-  while [[ $retry_count -lt 3 ]]; do
-    colored_echo 33 "Attempting to reboot $server_name..."  # Orange for attempt message (color code 33)
-    ssh $server_name "reboot" &  # Issue reboot command asynchronously (&)
+function groene_echo() {
+  echo -e "\e[32m$1\e[0m"
+}
 
-    # Check if server is reachable using ping
-    if ping -c 1 $server_name &> /dev/null; then
-      colored_echo 32 "Success!"  # Green for success message (color code 32)
-      break
-    else
-      colored_echo 31 "That host is unreachable. Retrying: $((retry_count + 1)) of 3."  # Red for unreachable message (color code 31)
-      colored_echo 34 "Note: Cancel with CTRL+C."  # Blue for informational message (color code 34)
-      sleep 10
-      retry_count=$((retry_count + 1))
+function blauwe_echo() {
+  echo -e "\e[34m$1\e[0m"
+}
+
+########################################################################################
+# Vraag de gebruiker om het gehele groepje servers te herstarten.
+########################################################################################
+
+read -p "Wil je de gameservers (het gehele cluster) herstarten? (j/n): " keuze
+
+if [[ $keuze == "j" || $keuze == "J" ]]; then
+  oranje_echo "Alle hosts (het hele cluster) worden opnieuw opgestart..."
+
+  for host in "gameserver01" "gameserver02"; do
+    oranje_echo "Poging om $host opnieuw op te starten..."
+    ssh $host "reboot" &
+
+    # Wacht-lus met voortgangsupdates
+    max_pogingen=10
+    for poging_nummer in $(seq 1 $max_pogingen); do
+      slaap 10
+      if ping -c 1 $host &> /dev/null; then
+        groene_echo "Succes!"
+        pauze
+        onderbreking
+      else
+        echo -n "$((poging_nummer * 10))/100s..."
+      fi
+    done
+
+    if [[ $poging_nummer == $max_pogingen ]]; then
+      rode_echo "\nOpdracht voor herstarten verzonden, verbinding verbroken, maar het script heeft niet gedetecteerd dat de host weer online is gekomen."
+      rode_echo "Niet gelukt om $host opnieuw op te starten na $max_pogingen pogingen"
     fi
   done
 
-  # Handle failure after retries
-  if [[ $retry_count -eq 3 ]]; then
-    colored_echo 31 "Failed to reach $server_name after 3 retries. Aborting script."
-    exit 1
-  fi
-}
-
-# Check if any arguments are provided
-if [[ $# -eq 0 ]]; then
-  colored_echo 34 "SYNOPSYS: rebootservers-v3.sh <server1> <server2> ...(Divide the servernames with a space)"  # Blue for synopsis (color code 34)
-  exit 1
+  oranje_echo "Huidige machine wordt opnieuw opgestart..."
+  slaap 3
+  groene_echo "Tot ziens!"
+  herstart
+else
+  blauwe_echo "Script is uitgevoerd, maar er was een probleem met het opnieuw opstarten van (een van) de machines of de gebruiker heeft het script geannuleerd!"
 fi
-
-# Main script execution
-server_count=$#
-colored_echo 33 "Sending reboot commands to $server_count servers..."  # Orange for sending commands (color code 33)
-
-# Loop through each server name (space-separated arguments)
-for server_name in "$@"; do
-  reboot_server "$server_name"
-done
-
-colored_echo 33 "Rebooting current machine..."  # Orange for rebooting message (color code 33)
-sleep 3
-colored_echo 32 "Bye!"  # Green for goodbye message (color code 32)
-reboot
