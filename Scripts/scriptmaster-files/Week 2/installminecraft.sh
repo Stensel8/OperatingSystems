@@ -1,108 +1,120 @@
 #!/bin/bash
 
-# Function to display colored messages
-function color_msg() {
-  local color="$1"
-  local msg="$2"
-  case "$color" in
-    red) echo -e "\e[31m$msg\e[0m" ;;
-    green) echo -e "\e[32m$msg\e[0m" ;;
-    orange) echo -e "\e[33m$msg\e[0m" ;;
-    blue) echo -e "\e[34m$msg\e[0m" ;;
-    *) echo "$msg" ;;
-  esac
+########################################################################################
+# © Sten Tijhuis - 550600
+# installminecraft.sh
+########################################################################################
+
+########################################################################################
+# Functies aanmaken
+########################################################################################
+
+function rode_echo() {
+  echo -e "\e[31m$1\e[0m"
 }
 
-# Function to display a line separator
-function line_separator() {
+function oranje_echo() {
+  echo -e "\e[33m$1\e[0m"
+}
+
+function groene_echo() {
+  echo -e "\e[32m$1\e[0m"
+}
+
+function blauwe_echo() {
+  echo -e "\e[34m$1\e[0m"
+}
+
+# Functie om een lijn scheider weer te geven
+function lijn_scheider() {
   echo "--------------------------------------------------------------"
 }
 
-# Function to connect to a server and execute commands
-function run_on_server() {
+# Functie om verbinding te maken met een server en commando's uit te voeren
+function uitvoeren_op_server() {
   server=$1
   shift
 
-  color_msg orange "** Connecting to $server **"
-  # Attempt SSH connection and execute commands
+  oranje_echo "** Verbinden met $server **"
+  # Probeer SSH-verbinding te maken en commando's uit te voeren
   ssh -q -t $server "$@"
-  # Check the exit status of the SSH connection attempt
+  # Controleer de exit-status van de SSH-verbinding
   ssh_exit_status=$?
   if [ $ssh_exit_status -ne 0 ]; then
-    color_msg red "Failed to connect to $server."
+    rode_echo "Kan geen verbinding maken met $server."
     return 1
   fi
-  color_msg orange "** Actions on $server completed **"
+  oranje_echo "** Acties op $server voltooid **"
   echo
 }
 
-# Check if the configuration file is provided as a parameter
+# Controleer of het configuratiebestand als parameter is opgegeven
 if [ $# -eq 0 ]; then
-    color_msg red "SYNOPSIS: $0 <configuration_file>"
+    rode_echo "SYNOPSIS: $0 <configuratiebestand>"
     exit 1
 fi
 
-configuration_file=$1
+configuratiebestand=$1
 
-# Check if the configuration file exists
-if [ ! -f "$configuration_file" ]; then
-    color_msg red "File $configuration_file does not exist. Script aborted."
+# Controleer of het configuratiebestand bestaat
+if [ ! -f "$configuratiebestand" ]; then
+    rode_echo "Bestand $configuratiebestand bestaat niet. Script afgebroken."
     exit 1
 fi
 
-# Read hostnames and IP addresses alternatively from the configuration file
-servers=($(grep -v "^#" "$configuration_file"))
+# Lees hostnamen en IP-adressen afwisselend uit het configuratiebestand
+servers=($(grep -v "^#" "$configuratiebestand"))
 
-echo "Installation via configuration file $configuration_file."
-echo "Minecraft server will be installed on the following servers: ${servers[*]}"
-read -p "Do you want to proceed (y/n): " choice
+echo "Installatie via configuratiebestand $configuratiebestand."
+echo "Minecraft-server zal worden geïnstalleerd op de volgende servers: ${servers[*]}"
+read -p "Wil je doorgaan (j/n): " keuze
 
-if [ "$choice" == "y" ]; then
-    success_count=0
-    already_running_count=0
+if [ "$keuze" == "j" ]; then
+    succes_aantal=0
+    al_geactiveerd_aantal=0
 
-    # Loop through servers and perform steps
+    # Loop door servers en voer stappen uit
     for server in "${servers[@]}"; do
-        # Check if the server is reachable
+        # Controleer of de server bereikbaar is
         if ! ping -c 1 -W 1 "$server" &> /dev/null; then
-            color_msg red "Server $server is not reachable. Skipping installation."
+            rode_echo "Server $server is niet bereikbaar. Installatie wordt overgeslagen."
             continue
         fi
         
-        # Check if Docker is installed on the server
+        # Controleer of Docker is geïnstalleerd op de server
         if ssh $server "command -v docker >/dev/null 2>&1"; then
-            # Check if the Minecraft Docker container is already running
+            # Controleer of de Minecraft Docker-container al draait
             if ssh $server "docker ps | grep -q mc"; then
-                color_msg blue "Minecraft server is already running on $server."
-                ((already_running_count++))
+                blauwe_echo "Minecraft-server draait al op $server."
+                ((al_geactiveerd_aantal++))
             else
-                # Run Minecraft server in Docker
-                run_on_server $server <<EOF
-                    echo "** Starting Minecraft server in Docker **"
+                # Start de Minecraft-server in Docker
+                uitvoeren_op_server $server <<EOF
+                    echo "** Minecraft-server starten in Docker **"
                     docker run -d -it -p 25565:25565 -e EULA=TRUE -v ~/minecraft-data:/data --name mc itzg/minecraft-server
 EOF
                 if [ $? -eq 0 ]; then
-                    color_msg green "Minecraft server started successfully on $server."
-                    ((success_count++))
+                    groene_echo "Minecraft-server succesvol gestart op $server."
+                    ((succes_aantal++))
                 else
-                    color_msg red "Failed to start Minecraft server on $server."
+                    rode_echo "Kon Minecraft-server niet starten op $server."
                 fi
             fi
         else
-            color_msg red "Docker is not installed on $server. Please install Docker manually."
+            rode_echo "Docker is niet geïnstalleerd op $server. Installeer Docker handmatig."
         fi
-        line_separator
+        lijn_scheider
     done
 
-    line_separator
-    color_msg green "** SUMMARY **"
+    lijn_scheider
+    groene_echo "** SAMENVATTING **"
     echo
-    color_msg green "Minecraft server started successfully on $success_count server(s)."
-    color_msg blue "Minecraft server is already running on $already_running_count server(s)."
-    line_separator
+    groene_echo "Minecraft-server succesvol gestart op $succes_aantal server(s)."
+    blauwe_echo "Minecraft-server draait al op $al_geactiveerd_aantal server(s)."
+    lijn_scheider
     echo
-elif [ "$choice" == "n" ]; then
-    color_msg orange "User aborted the script."
+elif [ "$keuze" == "n" ]; then
+    oranje_echo "Gebruiker heeft het script afgebroken."
 else
-    color_msg red "Invalid input. Script aborted."
+    rode_echo "Ongeldige invoer. Script afgebroken."
 fi

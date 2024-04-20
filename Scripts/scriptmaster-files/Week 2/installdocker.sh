@@ -86,7 +86,7 @@ if [ "$keuze" == "j" ]; then
             groene_echo "Docker is al geïnstalleerd op $server."
             ((overslaan_aantal++))
         else
-            # Installeer Docker met behulp van het convenience script
+            # Installeer Docker met behulp van het script
             uitvoeren_op_server $server <<EOF
                 echo "** Docker installeren **"
                 curl -fsSL https://get.docker.com -o get-docker.sh
