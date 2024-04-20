@@ -65,19 +65,15 @@ for server in "${servers[@]}"; do
     fi
 
     # Probeer de bestanden /etc/passwd en /etc/shadow van de server te kopiëren
-    ssh "$server" "sudo cp /etc/passwd /etc/shadow ~/" &>> backup.log
+    scp "$server":/etc/passwd "$server":/etc/shadow "$server_backup_dir/" &>> backup.log
 
     # Controleer of de kopieeroperatie succesvol was
     if [ $? -eq 0 ]; then
-        # Verplaats de gekopieerde bestanden naar de backupdirectory van de server
-        ssh "$server" "sudo mv -i ~/passwd ~/shadow '$server_backup_dir/'" &>> backup.log
-        if [ $? -eq 0 ]; then
-            groene_echo "Backup wachtwoordbestanden van $server is gelukt."
-            ((succesvol_aantal++))
-        else
-            oranje_echo "Kon de backupbestanden niet verplaatsen naar $server_backup_dir. Backup voor $server wordt overgeslagen."
-            ((mislukt_aantal++))
-        fi
+        # Hernoem de gekopieerde bestanden naar de servernaam
+        mv "$server_backup_dir/passwd" "$server_backup_dir/${server}_passwd"
+        mv "$server_backup_dir/shadow" "$server_backup_dir/${server}_shadow"
+        groene_echo "Backup wachtwoordbestanden van $server is gelukt."
+        ((succesvol_aantal++))
     else
         rode_echo "Backup wachtwoordbestanden van $server is mislukt."
         ((mislukt_aantal++))
