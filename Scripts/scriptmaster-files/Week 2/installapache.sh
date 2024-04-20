@@ -1,127 +1,139 @@
 #!/bin/bash
 
-# Function to display colored messages
-function color_msg() {
-  local color="$1"
-  local msg="$2"
-  case "$color" in
-    red) echo -e "\e[31m$msg\e[0m" ;;
-    green) echo -e "\e[32m$msg\e[0m" ;;
-    orange) echo -e "\e[33m$msg\e[0m" ;;
-    blue) echo -e "\e[34m$msg\e[0m" ;;
-    *) echo "$msg" ;;
-  esac
+########################################################################################
+# © Sten Tijhuis - 550600
+# installapache.sh
+########################################################################################
+
+########################################################################################
+# Functies aanmaken
+########################################################################################
+
+function rode_echo() {
+  echo -e "\e[31m$1\e[0m"
 }
 
-# Function to display a line separator
-function line_separator() {
+function oranje_echo() {
+  echo -e "\e[33m$1\e[0m"
+}
+
+function groene_echo() {
+  echo -e "\e[32m$1\e[0m"
+}
+
+function blauwe_echo() {
+  echo -e "\e[34m$1\e[0m"
+}
+
+# Functie om een lijn scheider weer te geven
+function lijn_scheider() {
   echo "--------------------------------------------------------------"
 }
 
-# Function to connect to a server and execute commands
-function run_on_server() {
+# Functie om verbinding te maken met een server en commando's uit te voeren
+function uitvoeren_op_server() {
   server=$1
   shift
 
-  color_msg orange "** Connecting to $server **"
-  # Attempt SSH connection and execute commands
+  oranje_echo "** Verbinden met $server **"
+  # Probeer SSH-verbinding te maken en commando's uit te voeren
   ssh -q -t $server "$@"
-  # Check the exit status of the SSH connection attempt
+  # Controleer de exit-status van de SSH-verbinding
   ssh_exit_status=$?
   if [ $ssh_exit_status -ne 0 ]; then
-    color_msg red "Failed to connect to $server."
+    rode_echo "Kan geen verbinding maken met $server."
     return 1
   fi
-  color_msg orange "** Actions on $server completed **"
+  oranje_echo "** Acties op $server voltooid **"
   echo
 }
 
-# Check if the configuration file is provided as a parameter
+# Controleer of het configuratiebestand als parameter is opgegeven
 if [ $# -eq 0 ]; then
-    color_msg red "SYNOPSIS: $0 <configuration_file>"
+    rode_echo "SYNOPSIS: $0 <configuratiebestand>"
     exit 1
 fi
 
-configuration_file=$1
+configuratiebestand=$1
 
-# Check if the configuration file exists
-if [ ! -f "$configuration_file" ]; then
-    color_msg red "File $configuration_file does not exist. Script aborted."
+# Controleer of het configuratiebestand bestaat
+if [ ! -f "$configuratiebestand" ]; then
+    rode_echo "Bestand $configuratiebestand bestaat niet. Script afgebroken."
     exit 1
 fi
 
-# Read hostnames and IP addresses alternatively from the configuration file
-servers=($(grep -v "^#" "$configuration_file"))
+# Lees hostnamen en IP-adressen afwisselend uit het configuratiebestand
+servers=($(grep -v "^#" "$configuratiebestand"))
 
-echo "Installation via configuration file $configuration_file."
-echo "Apache will be installed and started on the following servers: ${servers[*]}"
-read -p "Do you want to proceed (y/n): " choice
+echo "Installatie via configuratiebestand $configuratiebestand."
+echo "Apache zal worden geïnstalleerd en gestart op de volgende servers: ${servers[*]}"
+read -p "Wil je doorgaan (j/n): " keuze
 
-if [ "$choice" == "y" ]; then
-    success_count=0
-    already_running_count=0
-    already_running_servers=""
-    already_installed_not_running_servers=""
-    install_failure_count=0
+if [ "$keuze" == "j" ]; then
+    succes_aantal=0
+    al_geactiveerd_aantal=0
+    al_geactiveerd_servers=""
+    al_geïnstalleerd_niet_actief_servers=""
+    installatie_mislukt_aantal=0
 
-    # Loop through servers and perform steps
+    # Loop door servers en voer stappen uit
     for server in "${servers[@]}"; do
-        # Check if the server is reachable
+        # Controleer of de server bereikbaar is
         if ! ping -c 1 -W 1 "$server" &> /dev/null; then
-            color_msg red "Server $server is not reachable. Skipping installation."
-            ((install_failure_count++))
+            rode_echo "Server $server is niet bereikbaar. Installatie wordt overgeslagen."
+            ((installatie_mislukt_aantal++))
             continue
         fi
         
-        # Check if Apache is already installed and running
+        # Controleer of Apache al is geïnstalleerd en actief is
         if ssh -q $server "sudo systemctl is-active --quiet apache2"; then
-            color_msg green "Apache is already running on $server."
-            ((already_running_count++))
-            already_running_servers+=" $server"
+            groene_echo "Apache draait al op $server."
+            ((al_geactiveerd_aantal++))
+            al_geactiveerd_servers+=" $server"
         elif ssh -q $server "dpkg -l | grep -q apache2"; then
-            color_msg orange "Apache is installed but not running on $server. Attempting to start..."
+            oranje_echo "Apache is geïnstalleerd maar niet actief op $server. Probeer te starten..."
             if ssh -q $server "sudo systemctl start apache2"; then
-                color_msg green "Apache started successfully on $server."
-                ((success_count++))  # Increment success count for servers where Apache was started successfully
+                groene_echo "Apache succesvol gestart op $server."
+                ((succes_aantal++))  # Incrementeer het succesvolle aantal voor servers waar Apache succesvol is gestart
             else
-                color_msg red "Failed to start Apache on $server. It seems the package has become corrupt."
-                color_msg red "You should consider fixing this yourself. Use 'sudo apt autoremove' to do so."
+                rode_echo "Kon Apache niet starten op $server. Het lijkt erop dat het pakket beschadigd is."
+                rode_echo "Je zou dit zelf moeten oplossen. Gebruik 'sudo apt autoremove' om dit te doen."
             fi
-            already_installed_not_running_servers+=" $server"  # Add the server to the list of already installed but not running servers
+            al_geïnstalleerd_niet_actief_servers+=" $server"  # Voeg de server toe aan de lijst van al geïnstalleerde maar niet actieve servers
         else
-            # Install and start Apache
-            run_on_server $server <<EOF
-                echo "** Installing Apache web server **"
+            # Installeer en start Apache
+            uitvoeren_op_server $server <<EOF
+                echo "** Apache webserver installeren **"
                 sudo apt update && sudo apt install -y apache2
                 if [ \$? -eq 0 ]; then
                     sudo systemctl start apache2
                     if [ \$? -eq 0 ]; then
-                        echo "Installation on $server completed."
-                        ((success_count++))
+                        echo "Installatie op $server voltooid."
+                        ((succes_aantal++))
                     else
-                        echo "Failed to start Apache on $server."
-                        ((install_failure_count++))
+                        echo "Kon Apache niet starten op $server."
+                        ((installatie_mislukt_aantal++))
                     fi
                 else
-                    echo "Installation on $server failed."
-                    ((install_failure_count++))
+                    echo "Installatie op $server mislukt."
+                    ((installatie_mislukt_aantal++))
                 fi
 EOF
         fi
-        line_separator
+        lijn_scheider
     done
 
-    line_separator
-    color_msg green "** SUMMARY **"
+    lijn_scheider
+    groene_echo "** SAMENVATTING **"
     echo
-    color_msg green "Apache started successfully on $success_count server(s)."
-    color_msg blue "Apache is already running on $already_running_count server(s):$already_running_servers"
-    color_msg orange "Apache was already installed but not running on:$already_installed_not_running_servers"
-    color_msg red "Total install failures: $install_failure_count"
-    line_separator
+    groene_echo "Apache succesvol gestart op $succes_aantal server(s)."
+    blauwe_echo "Apache draait al op $al_geactiveerd_aantal server(s):$al_geactiveerd_servers"
+    oranje_echo "Apache was al geïnstalleerd maar niet actief op:$al_geïnstalleerd_niet_actief_servers"
+    rode_echo "Totaal aantal installatiefouten: $installatie_mislukt_aantal"
+    lijn_scheider
     echo
-elif [ "$choice" == "n" ]; then
-    color_msg orange "User aborted the script."
+elif [ "$keuze" == "n" ]; then
+    oranje_echo "Gebruiker heeft het script afgebroken."
 else
-    color_msg red "Invalid input. Script aborted."
+    rode_echo "Ongeldige invoer. Script afgebroken."
 fi
