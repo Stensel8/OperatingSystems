@@ -19,6 +19,7 @@ function Write-ColoredOutput {
 
 try {
     # Display information
+    Clear-Host
     Write-ColoredOutput "Copying files from $sourcePath to ${hostname}:$destinationPath" -Color Cyan
 
     # Perform SCP transfer
