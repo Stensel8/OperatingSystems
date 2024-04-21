@@ -1,154 +1,178 @@
 #!/bin/bash
-clear
 
-# Function to display error messages
-error() {
-  echo -e "\e[31mError: $1\e[0m" >&2
+########################################################################################
+# © Sten Tijhuis - 550600
+# install-labenvironment.sh
+########################################################################################
+
+########################################################################################
+# Functies
+########################################################################################
+
+functie rode_echo() {
+  echo -e "\e[31m$1\e[0m"
+}
+
+functie oranje_echo() {
+  echo -e "\e[33m$1\e[0m"
+}
+
+functie groene_echo() {
+  echo -e "\e[32m$1\e[0m"
+}
+
+functie blauwe_echo() {
+  echo -e "\e[34m$1\e[0m"
+}
+
+# Functie om foutmeldingen weer te geven en af te sluiten
+fout() {
+  rode_echo "Fout: $1" >&2
   exit 1
 }
 
-# Function to validate IP address format
-validate_ip() {
-  local ip=$1
+# Functie om het IP-adres formaat te valideren
+valideer_ip() {
+  lokaal ip=$1
   if [[ ! $ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     return 1
   fi
 }
 
-# Function to add whitespace for clearer output
-custom_echo() {
+# Functie om witruimte toe te voegen voor duidelijkere uitvoer
+aangepaste_echo() {
   echo -e "\n\e[33m$1\e[0m"
 }
 
-# Function to test and display ping status
-test_ip_and_display() {
-  local ip=$1
-  local counter=$2
-  local total=$3
+# Functie om het pingstatus te testen en weer te geven
+test_ip_en_weergeven() {
+  lokaal ip=$1
+  lokaal teller=$2
+  lokaal totaal=$3
 
   ping -c 1 "$ip" &> /dev/null
   if [[ $? -eq 0 ]]; then
-    echo -e "\e[32mTesting ${counter}/${total}.... OK. Machine seems up!\e[0m"
+    groene_echo "Testen ${teller}/${totaal}.... OK. Machine lijkt online te zijn!"
   else
-    echo -e "\e[31mERROR! Testing ${counter}/${total}.... $ip seems down.\e[0m"
-    return 1  # Return non-zero exit code on error
+    rode_echo "FOUT! Testen ${teller}/${totaal}.... $ip lijkt offline te zijn."
+    return 1  # Geef een exitcode verschillend van nul terug bij fout
   fi
 }
 
-# Function to read IP addresses
-read_ip_addresses() {
-  retry_count=0
-  max_retries=3
-  valid_inputs=false
+# Functie om IP-adressen te lezen en valideren
+lees_en_valideer_ip_adressen() {
+  lokaal poging=0
+  lokaal max_pogingen=3
+  geldige_invoer=false
 
-  custom_echo "What is the IP-address of the VM currently in use (scriptmaster)?"
-  while true; do
-    read IPMASTER
-    if validate_ip "$IPMASTER"; then
-      break
+  aangepaste_echo "Wat is het IP-adres van de momenteel gebruikte VM (scriptmaster)?"
+  terwijl waar; doe
+    lezen IPMASTER
+    als valideer_ip "$IPMASTER"; dan
+      doorbreken
     fi
 
-    ((retry_count++))
-    if ((retry_count >= max_retries)); then
-      error "Exceeded maximum number of retries. Exiting."
-    fi
-    clear
-    echo -e "\e[31mInvalid IP address format. Please try again.\e[0m"
-  done
-
-  retry_count=0
-
-  custom_echo "Enter the IP-address of gameserver01:"
-  while true; do
-    read IPSERVER1
-    if validate_ip "$IPSERVER1"; then
-      break
-    fi
-
-    ((retry_count++))
-    if ((retry_count >= max_retries)); then
-      error "Exceeded maximum number of retries. Exiting."
+    ((poging++))
+    als ((poging >= max_pogingen)); dan
+      fout "Maximum aantal pogingen overschreden. Afsluiten."
     fi
     clear
-    echo -e "\e[31mInvalid IP address format. Please try again.\e[0m"
-  done
+    rode_echo "Ongeldig IP-adres formaat. Probeer opnieuw."
+  gedaan
 
-  retry_count=0
+  poging=0
 
-  custom_echo "Enter the IP-address of gameserver02:"
-  while true; do
-    read IPSERVER2
-    if validate_ip "$IPSERVER2"; then
-      break
+  aangepaste_echo "Voer het IP-adres van gameserver01 in:"
+  terwijl waar; doe
+    lezen IPSERVER1
+    als valideer_ip "$IPSERVER1"; dan
+      doorbreken
     fi
 
-    ((retry_count++))
-    if ((retry_count >= max_retries)); then
-      error "Exceeded maximum number of retries. Exiting."
+    ((poging++))
+    als ((poging >= max_pogingen)); dan
+      fout "Maximum aantal pogingen overschreden. Afsluiten."
     fi
     clear
-    echo -e "\e[31mInvalid IP address format. Please try again.\e[0m"
-  done
+    rode_echo "Ongeldig IP-adres formaat. Probeer opnieuw."
+  gedaan
 
-  valid_inputs=true
+  poging=0
+
+  aangepaste_echo "Voer het IP-adres van gameserver02 in:"
+  terwijl waar; doe
+    lezen IPSERVER2
+    als valideer_ip "$IPSERVER2"; dan
+      doorbreken
+    fi
+
+    ((poging++))
+    als ((poging >= max_pogingen)); dan
+      fout "Maximum aantal pogingen overschreden. Afsluiten."
+    fi
+    clear
+    rode_echo "Ongeldig IP-adres formaat. Probeer opnieuw."
+  gedaan
+
+  geldige_invoer=true
 }
 
-# Function to test all entered IPs
-test_all_ips() {
-  if [[ $valid_inputs == true ]]; then
-    # Test each IP and exit script if any fail
-    if ! test_ip_and_display "$IPMASTER" 1 3; then
+# Functie om alle ingevoerde IP's te testen
+test_en_toon_alle_ips() {
+  als [[ $geldige_invoer == true ]]; dan
+    # Test elk IP-adres en stop script als er een fout optreedt
+    als ! test_ip_en_weergeven "$IPMASTER" 1 3; dan
       exit 1
     fi
-    if ! test_ip_and_display "$IPSERVER1" 2 3; then
+    als ! test_ip_en_weergeven "$IPSERVER1" 2 3; dan
       exit 1
     fi
-    test_ip_and_display "$IPSERVER2" 3 3  # Test the last one even if previous fail
+    test_ip_en_weergeven "$IPSERVER2" 3 3  # Test de laatste zelfs als eerdere mislukken
   else
-    echo -e "\e[31mTesting aborted. Please enter valid IP addresses first.\e[0m"
+    rode_echo "Testen afgebroken. Voer eerst geldige IP-adressen in."
   fi
 }
 
-# Read initial IP addresses and start testing
-read_ip_addresses
-test_all_ips
+# Lees de initiële IP-adressen en begin met testen
+lees_en_valideer_ip_adressen
+test_en_toon_alle_ips
 
 ########################################################################################
-# Generate some ssh-keys for the root user and copy them to the Ubuntu 22.04 Servers.
+# Genereer ssh-sleutels voor de rootgebruiker en kopieer ze naar de Ubuntu 22.04-servers.
 ########################################################################################
 
-if [[ $? -eq 0 ]]; then
-  custom_echo
-  custom_echo "\e[33mGenerating ssh-keys...\e[0m"
+als [[ $? -eq 0 ]]; dan
+  aangepaste_echo
+  aangepaste_echo "\e[33mGenereren van ssh-sleutels...\e[0m"
   ssh-keygen
 fi
 
-USER="root"
+GEBRUIKER="root"
 
-for HOST in $IPSERVER1 $IPSERVER2
+voor HOST in $IPSERVER1 $IPSERVER2
 do
-  custom_echo
-  custom_echo "\e[33mAttempting to copy ssh-keys to $HOST...\e[0m"
-  if ssh-copy-id -f -i ~/.ssh/id_rsa.pub $USER@$HOST; then
-    custom_echo "\n\n \e[32mssh-keys installed on $HOST \e[0m \n\n"
+  aangepaste_echo
+  aangepaste_echo "\e[33mProbeer ssh-sleutels te kopiëren naar $HOST...\e[0m"
+  als ssh-copy-id -f -i ~/.ssh/id_rsa.pub $GEBRUIKER@$HOST; dan
+    aangepaste_echo "\n\n \e[32mssh-sleutels geïnstalleerd op $HOST \e[0m \n\n"
   else
-    custom_echo "\e[31mFailed to copy ssh-keys to $HOST. Please check its reachability and try again.\e[0m"
+    aangepaste_echo "\e[31mKopiëren van ssh-sleutels naar $HOST is mislukt. Controleer de bereikbaarheid en probeer het opnieuw.\e[0m"
   fi
-done
+gedaan
 
 ########################################################################################
-# Set the hostname on the current machine to scriptmaster.
+# Stel de hostnaam op de huidige machine in op scriptmaster.
 ########################################################################################
 
-custom_echo
-custom_echo "\e[33mSetting hostname of current machine to 'scriptmaster'...\e[0m"
-hostnamectl set-hostname scriptmaster && echo -e "\e[32mHostname set!\e[0m"
+aangepaste_echo
+aangepaste_echo "\e[33mInstellen van hostnaam van de huidige machine op 'scriptmaster'...\e[0m"
+hostnamectl set-hostname scriptmaster && groene_echo "Hostname ingesteld!"
 
 ########################################################################################
-# Update the /etc/hosts to resolve servers (manual DNS resolving).
+# Werk /etc/hosts bij om servers op te lossen (handmatige DNS-oplossing).
 ########################################################################################
 
-custom_echo "\e[33mUpdating /etc/hosts with DNS entries...\e[0m"
+aangepaste_echo "\e[33mBijwerken van /etc/hosts met DNS-vermeldingen...\e[0m"
 
 cat << EOF > /etc/hosts
 # /etc/hosts
@@ -159,64 +183,64 @@ $IPSERVER1    gameserver01
 $IPSERVER2    gameserver02  
 EOF
 
-echo -e "\e[33mWarning: Overwriting /etc/hosts file with new entries. This will clear old DNS entries.\e[0m"
-read -p "Continue? (y/n): " choice
+echo -e "\e[33mWaarschuwing: Overschrijven van /etc/hosts bestand met nieuwe vermeldingen. Dit zal oude DNS-vermeldingen wissen.\e[0m"
+lees -p "Doorgaan? (j/n): " keuze
 
-if [[ $choice != "y" && $choice != "Y" ]]; then
-    echo -e "\e[31mExiting as per user request.\e[0m"
+als [[ $keuze != "j" && $keuze != "J" ]]; dan
+    rode_echo "Afsluiten op verzoek van de gebruiker."
     exit 1
 fi
 
 ########################################################################################
-# Copy the /etc/hosts DNS entries to the other servers.
+# Kopieer de DNS-vermeldingen in /etc/hosts naar de andere servers.
 ########################################################################################
 
-custom_echo "\e[33mAttempting to copy DNS entries to other servers...\e[0m"
+aangepaste_echo "\e[33mPoging om DNS-vermeldingen naar andere servers te kopiëren...\e[0m"
 
-for HOST in "gameserver01" "gameserver02"; do
-    scp -q /etc/hosts $HOST:/etc/hosts && echo -e "\e[32mDNS entries copied to $HOST!\e[0m"
-done
+voor HOST in "gameserver01" "gameserver02"; doe
+    scp -q /etc/hosts $HOST:/etc/hosts && groene_echo "\e[32mDNS-vermeldingen gekopieerd naar $HOST!\e[0m"
+gedaan
 
-# Set hostname on each server after copying DNS entries
-for HOST in "gameserver01" "gameserver02"; do
-    custom_echo "\e[33mSetting hostname on $HOST...\e[0m"
-    ssh $HOST "hostnamectl set-hostname $HOST" && echo -e "\e[32mHostname set on $HOST!\e[0m"
-done
+# Stel de hostnaam in op elke server na het kopiëren van DNS-vermeldingen
+voor HOST in "gameserver01" "gameserver02"; doe
+    aangepaste_echo "\e[33mInstellen van hostnaam op $HOST...\e[0m"
+    ssh $HOST "hostnamectl set-hostname $HOST" && groene_echo "\e[32mHostname ingesteld op $HOST!\e[0m"
+gedaan
 
 ########################################################################################
-# Reboot the whole cluster so the new hostnames are being applied.
+# Start de hele cluster opnieuw op zodat de nieuwe hostnamen worden toegepast.
 ########################################################################################
 
-custom_echo ""
-read -p "Do you want to reboot the affected machines to apply the pending name changes? (y/n): " choice
-if [[ $choice == "y" || $choice == "Y" ]]; then
-  custom_echo "\e[33mRebooting all hosts (whole cluster)...\e[0m"
-  for HOST in "gameserver01" "gameserver02"; do
-    custom_echo "Attempting to reboot $HOST... "
+aangepaste_echo ""
+lees -p "Wil je de betrokken machines opnieuw opstarten om de uitstaande naamwijzigingen toe te passen? (j/n): " keuze
+als [[ $keuze == "j" || $keuze == "J" ]]; dan
+  aangepaste_echo "\e[33mOpnieuw opstarten van alle hosts (volledige cluster)...\e[0m"
+  voor HOST in "gameserver01" "gameserver02"; doe
+    aangepaste_echo "Poging tot herstarten van $HOST... "
     ssh $HOST "reboot" &
 
-    # Waiting loop with progress updates
-    max_retries=10  # Adjust as needed
-    for retry_count in $(seq 1 $max_retries); do
-      sleep 10
-      if ping -c 1 $HOST &> /dev/null; then
-        echo -e "\e[32mSuccess!\e[0m"
-        break
-      else
-        echo -n "$((retry_count * 10))/100s..."  # Time-based progress indicator
+    # Wachtlus met voortgangsupdates
+    max_pogingen=10  # Pas indien nodig aan
+    voor poging in $(seq 1 $max_pogingen); doe
+      slapen 10
+      als ping -c 1 $HOST &> /dev/null; dan
+        groene_echo "\e[32mSucces!\e[0m"
+        pauze
+      anders
+        echo -n "$((poging * 10))/100s..."  # Tijdgebaseerde voortgangsindicator
       fi
-    done
+    gedaan
 
-    if [[ $retry_count == $max_retries ]]; then
-      echo -e "\n\e[33mReboot command sent, connection was lost, but the script hasn't detected the host coming back up.\e[0m"
-      echo -e "\e[31mFailed to reboot $HOST after $max_retries retries\e[0m"
+    als [[ $poging == $max_pogingen ]]; dan
+      rode_echo "\e[33mHerstartopdracht verzonden, verbinding verbroken, maar het script heeft de host niet zien opkomen.\e[0m"
+      rode_echo "\e[31mHerstarten van $HOST mislukt na $max_pogingen pogingen\e[0m"
     fi
-  done
-    # Reboot the current machine
-    custom_echo "\e[33mRebooting current machine...\e[0m"
-    sleep 3
-    custom_echo "\e[32mBye!\e[0m"
-    reboot
-else
-    echo "Script has been executed, however there was a problem rebooting (one of) the machines!"
+  gedaan
+    # Herstart de huidige machine
+    aangepaste_echo "\e[33mHerstarten van de huidige machine...\e[0m"
+    slapen 3
+    aangepaste_echo "\e[32mTot ziens!\e[0m"
+    herstarten
+anders
+    echo "Script is uitgevoerd, maar er was een probleem bij het herstarten van (een van) de machines!"
 fi
