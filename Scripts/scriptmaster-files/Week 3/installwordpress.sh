@@ -142,14 +142,11 @@ EOFApache'
                     ((installatie_mislukt_aantal++))
                 fi
 
-                echo "** MySQL database configureren **"
-                sudo mysql -u root <<MYSQL_SCRIPT
-CREATE DATABASE wordpress;
-CREATE USER 'wordpress'@'localhost' IDENTIFIED BY 'password';
-GRANT ALL ON wordpress.* TO 'wordpress'@'localhost' IDENTIFIED BY 'password' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-MYSQL_SCRIPT
-                echo "MySQL database configuratie voltooid op $server."
+                echo "** WordPress configureren **"
+                sudo sed -i "s/'DB_NAME', '.*'/'DB_NAME', 'wordpress'/g" /srv/www/wordpress/wp-config.php
+                sudo sed -i "s/'DB_USER', '.*'/'DB_USER', 'wordpress'/g" /srv/www/wordpress/wp-config.php
+                sudo sed -i "s/'DB_PASSWORD', '.*'/'DB_PASSWORD', 'password'/g" /srv/www/wordpress/wp-config.php
+                echo "WordPress configuratie voltooid op $server."
 
 EOF
         fi
