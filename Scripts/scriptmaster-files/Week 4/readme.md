@@ -1,3 +1,3 @@
 # Afbeelding van Voorbeeldwebsite
 
-![Afbeelding van Voorbeeldwebsite](Scripts\scriptmaster-files\voorbeeldwebsite - Orcs Nest.png)
+![Afbeelding van Voorbeeldwebsite](Scripts\scriptmaster-files\Week 4\voorbeeldwebsite - Orcs Nest.png)
