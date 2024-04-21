@@ -1,0 +1,17 @@
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Afbeeldingen
+  ExpiresByType image/webp "access plus 30 days"
+
+  # CSS
+  ExpiresByType text/css "access plus 30 days"
+
+  # JavaScript
+  ExpiresByType application/javascript "access plus 30 days"
+</IfModule>
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ / [L,R=301]
