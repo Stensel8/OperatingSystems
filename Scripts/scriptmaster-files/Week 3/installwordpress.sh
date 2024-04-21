@@ -94,17 +94,55 @@ if [ "$keuze" == "j" ]; then
             continue
         fi
         
+        # Installeer benodigde pakketten
+        uitvoeren_op_server $server <<EOF
+            echo "** Benodigde pakketten installeren **"
+            sudo apt update && sudo apt install -y apache2 ghostscript libapache2-mod-php mysql-server php php-bcmath php-curl php-imagick php-intl php-json php-mbstring php-mysql php-xml php-zip
+            if [ \$? -eq 0 ]; then
+                echo "Benodigde pakketten installatie op $server voltooid."
+                ((succes_aantal++))
+            else
+                echo "Benodigde pakketten installatie op $server mislukt."
+                ((installatie_mislukt_aantal++))
+            fi
+EOF
+        lijn_scheider
+        
         # Installeer WordPress
         uitvoeren_op_server $server <<EOF
             echo "** WordPress installeren **"
-            sudo apt update && sudo apt install -y wordpress
-            if [ \$? -eq 0 ]; then
-                echo "WordPress installatie op $server voltooid."
-                ((succes_aantal++))
-            else
-                echo "WordPress installatie op $server mislukt."
-                ((installatie_mislukt_aantal++))
-            fi
+            sudo mkdir -p /srv/www
+            sudo chown www-data: /srv/www
+            curl https://wordpress.org/latest.tar.gz | sudo -u www-data tar zx -C /srv/www
+            
+            sudo bash -c 'cat << EOFApache > /etc/apache2/sites-available/wordpress.conf
+<VirtualHost *:80>
+    DocumentRoot /srv/www/wordpress
+    <Directory /srv/www/wordpress>
+        Options FollowSymLinks
+        AllowOverride Limit Options FileInfo
+        DirectoryIndex index.php
+        Require all granted
+    </Directory>
+    <Directory /srv/www/wordpress/wp-content>
+        Options FollowSymLinks
+        Require all granted
+    </Directory>
+</VirtualHost>
+EOFApache'
+            sudo a2ensite wordpress
+            sudo a2enmod rewrite
+            sudo a2dissite 000-default
+            sudo systemctl reload apache2
+            
+            sudo -u www-data cp /srv/www/wordpress/wp-config-sample.php /srv/www/wordpress/wp-config.php
+            sudo -u www-data sed -i 's/database_name_here/wordpress/' /srv/www/wordpress/wp-config.php
+            sudo -u www-data sed -i 's/username_here/wordpress/' /srv/www/wordpress/wp-config.php
+            sudo -u www-data sed -i "s/password_here/<your-password>/" /srv/www/wordpress/wp-config.php
+            
+            sudo -u www-data curl -s https://api.wordpress.org/secret-key/1.1/salt/ | sudo -u www-data tee -a /srv/www/wordpress/wp-config.php > /dev/null
+            
+            echo "** WordPress installatie op $server voltooid."
 EOF
         lijn_scheider
     done
@@ -114,6 +152,12 @@ EOF
     echo
     groene_echo "WordPress succesvol geïnstalleerd op $succes_aantal server(s)."
     rode_echo "Totaal aantal installatiefouten: $installatie_mislukt_aantal"
+    lijn_scheider
+    echo
+    groene_echo "U kunt de WordPress-site bereiken op de volgende URL(s):"
+    for server in "${servers[@]}"; do
+        echo "http://$server/wp-admin"
+    done
     lijn_scheider
     echo
 elif [ "$keuze" == "n" ]; then
