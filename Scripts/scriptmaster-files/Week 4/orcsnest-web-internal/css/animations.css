@@ -1,0 +1,30 @@
+/* CSS voor de slide-animaties */
+.slide-from-left {
+    animation: slideLeft 1s ease;
+}
+
+.slide-from-right {
+    animation: slideRight 1s ease;
+}
+
+@keyframes slideLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

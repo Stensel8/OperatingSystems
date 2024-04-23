@@ -5,30 +5,7 @@
 */
 //
 // Scripts
-//
-
-// Functie voor het afspelen van klikgeluiden en het weergeven van een modaal venster
-function playClick() {
-    console.log('Button clicked!');
-
-    // Voeg een schudbeweging toe aan de body
-    document.body.classList.add('shake');
-
-    // Laat bootstrap modal pop-up zien
-    const myModal = new bootstrap.Modal(document.getElementById('myModal'));
-    myModal.show();
-
-    // Stop schud animatie na 2 seconden
-    setTimeout(() => {
-        document.body.classList.remove('shake');
-    }, 2000);
-
-    // Scroll naar boven
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-}
+// 
 
 // Wacht tot de DOM volledig is geladen
 window.addEventListener('DOMContentLoaded', event => {
@@ -78,8 +55,8 @@ window.addEventListener('DOMContentLoaded', event => {
     });
 
     // Activeer de SimpleLightbox-plugin voor portfoliostukken
-    new SimpleLightbox({
-        elements: '#portfolio a.portfolio-box'
-    });
+    //new SimpleLightbox({
+    //    elements: '#portfolio a.portfolio-box'
+    //});
 
 });
