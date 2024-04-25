@@ -10,10 +10,16 @@ Welcome to my GitHub repository for the assignments of this quarter in my HBO-IC
 - Week 6: Security
 - Week 7: Monitoring
 
-  ![Image of example website](https://github.com/Stensel8/OperatingSystems/raw/main/Scripts/scriptmaster-files/Week%204/voorbeeldwebsite%20-%20Orcs%20Nest.png)
+[![Image of example website](https://github.com/Stensel8/OperatingSystems/raw/main/Scripts/scriptmaster-files/Week%204/voorbeeldwebsite%20-%20Orcs%20Nest.png)](https://github.com/Stensel8/OperatingSystems/tree/c04f2bc3f957f6706b8e0c580b16c75d8e8ab34e/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
+[**View code**](https://github.com/Stensel8/OperatingSystems/tree/main/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
 
-I've documented the tasks and solutions for each week's assignments in separate folders. Feel free to explore and provide any feedback.
-I've collaborated with [hintenhaus04](https://github.com/hintenhaus04) on Github, which is a classmate of mine.
+<br>
+<br>
+
+I've documented the solutions for each week's assignments in separate folders. Feel free to explore and provide any feedback.
+
+I've collaborated with [hintenhaus04](https://github.com/hintenhaus04) on Github, who is a classmate of mine.
+
 
 ### Course Information:
 - **Course**: 1.3 Operating Systems VT(2023-2024)
@@ -34,10 +40,18 @@ Welkom bij mijn GitHub repository voor de opdrachten van dit kwartiel in mijn HB
 - Week 6: Beveiliging
 - Week 7: Monitoring
 
-  ![Afbeelding van Voorbeeldwebsite](https://github.com/Stensel8/OperatingSystems/raw/main/Scripts/scriptmaster-files/Week%204/voorbeeldwebsite%20-%20Orcs%20Nest.png)
+[![Image of example website](https://github.com/Stensel8/OperatingSystems/raw/main/Scripts/scriptmaster-files/Week%204/voorbeeldwebsite%20-%20Orcs%20Nest.png)](https://github.com/Stensel8/OperatingSystems/tree/c04f2bc3f957f6706b8e0c580b16c75d8e8ab34e/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
+[**Bekijk code**](https://github.com/Stensel8/OperatingSystems/tree/main/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
 
-Ik heb de taken en oplossingen voor elke week apart gedocumenteerd in aparte mappen. Voel je vrij om rond te kijken en eventuele feedback te geven.
-Ik heb samengewerkt met [hintenhaus04](https://github.com/hintenhaus04) op Github, wie een klasgenoot van me is.
+<br>
+<br>
+
+Ik heb de oplossingen voor de opdrachten van elke week gedocumenteerd in aparte mappen. Voel je vrij om even rond te kijken en feedback te geven.
+
+Ik heb samengewerkt met [hintenhaus04](https://github.com/hintenhaus04) op Github, wat een klasgenoot van me is.
+
+<br>
+<br>
 
 ### Cursusinformatie:
 - **Cursus**: 1.3 Operating Systems VT(2023-2024)
