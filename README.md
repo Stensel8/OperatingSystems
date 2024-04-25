@@ -10,7 +10,7 @@ Welcome to my GitHub repository for the assignments of this quarter in my HBO-IC
 - Week 6: Security
 - Week 7: Monitoring
 
-[![Image of example website](https://github.com/Stensel8/OperatingSystems/raw/main/Scripts/scriptmaster-files/Week%204/voorbeeldwebsite%20-%20Orcs%20Nest.png)](https://github.com/Stensel8/OperatingSystems/tree/c04f2bc3f957f6706b8e0c580b16c75d8e8ab34e/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
+[![Image of example website](https://github.com/Stensel8/OperatingSystems/raw/main/Scripts/scriptmaster-files/Week%204/voorbeeldwebsite%20-%20Orcs%20Nest.png)](https://github.com/Stensel8/OperatingSystems/tree/main/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
 [**View code**](https://github.com/Stensel8/OperatingSystems/tree/main/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
 
 <br>
@@ -40,7 +40,7 @@ Welkom bij mijn GitHub repository voor de opdrachten van dit kwartiel in mijn HB
 - Week 6: Beveiliging
 - Week 7: Monitoring
 
-[![Image of example website](https://github.com/Stensel8/OperatingSystems/raw/main/Scripts/scriptmaster-files/Week%204/voorbeeldwebsite%20-%20Orcs%20Nest.png)](https://github.com/Stensel8/OperatingSystems/tree/c04f2bc3f957f6706b8e0c580b16c75d8e8ab34e/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
+[![Image of example website](https://github.com/Stensel8/OperatingSystems/raw/main/Scripts/scriptmaster-files/Week%204/voorbeeldwebsite%20-%20Orcs%20Nest.png)](https://github.com/Stensel8/OperatingSystems/tree/main/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
 [**Bekijk code**](https://github.com/Stensel8/OperatingSystems/tree/main/Scripts/scriptmaster-files/Week%204/orcsnest-web-internal)
 
 <br>
