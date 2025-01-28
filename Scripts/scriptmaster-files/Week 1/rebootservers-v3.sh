@@ -36,16 +36,16 @@ if [[ $keuze == "j" || $keuze == "J" ]]; then
 
   for host in "gameserver01" "gameserver02"; do
     oranje_echo "Poging om $host opnieuw op te starten..."
-    ssh $host "reboot" &
+    ssh "$host" "reboot" &
 
     # Wacht-lus met voortgangsupdates
     max_pogingen=10
     for poging_nummer in $(seq 1 $max_pogingen); do
-      slaap 10
-      if ping -c 1 $host &> /dev/null; then
+      sleep 10
+      if ping -c 1 "$host" &> /dev/null; then
         groene_echo "Succes!"
-        pauze
-        onderbreking
+        sleep 1
+        break
       else
         echo -n "$((poging_nummer * 10))/100s..."
       fi
@@ -58,9 +58,9 @@ if [[ $keuze == "j" || $keuze == "J" ]]; then
   done
 
   oranje_echo "Huidige machine wordt opnieuw opgestart..."
-  slaap 3
+  sleep 3
   groene_echo "Tot ziens!"
-  herstart
+  sudo reboot
 else
   blauwe_echo "Script is uitgevoerd, maar er was een probleem met het opnieuw opstarten van (een van) de machines of de gebruiker heeft het script geannuleerd!"
 fi
